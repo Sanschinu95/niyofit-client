@@ -7,7 +7,7 @@ export default function Footer() {
   return (
     <footer className="bg-blue-950 text-white">
       <div className="container mx-auto px-4 py-12">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* Company Info */}
           <div>
             <div className="mb-4">
@@ -60,11 +60,7 @@ export default function Footer() {
                   Partner With Us
                 </Link>
               </li>
-              <li>
-                <Link href="/careers" className="text-blue-200 hover:text-white">
-                  Careers
-                </Link>
-              </li>
+
             </ul>
           </div>
 
@@ -95,19 +91,7 @@ export default function Footer() {
             </ul>
           </div>
 
-          {/* Newsletter */}
-          <div>
-            <h3 className="text-lg font-bold mb-4">Newsletter</h3>
-            <p className="text-blue-200 mb-4">Subscribe to our newsletter for fitness tips and exclusive offers.</p>
-            <div className="flex flex-col space-y-2">
-              <Input
-                type="email"
-                placeholder="Your email address"
-                className="bg-blue-900 border-blue-800 text-white placeholder:text-blue-400"
-              />
-              <Button className="bg-orange-500 hover:bg-orange-600 text-white">Subscribe</Button>
-            </div>
-          </div>
+
         </div>
 
         <div className="border-t border-blue-900 mt-12 pt-6 flex flex-col md:flex-row justify-between items-center">

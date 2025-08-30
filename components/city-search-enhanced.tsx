@@ -200,7 +200,7 @@ export default function CitySearchEnhanced({ onSearch }: CitySearchEnhancedProps
         </div>
 
         {/* Additional options */}
-        <div className="flex flex-col sm:flex-row gap-3 items-center">
+        <div className="flex flex-col sm:flex-row gap-3 items-center justify-center">
           {/* Use my location button */}
           <Button
             type="button"

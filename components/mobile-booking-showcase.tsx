@@ -91,15 +91,7 @@ export default function MobileBookingShowcase() {
                 4.9 ★
               </motion.div>
 
-              <motion.div
-                className="absolute -bottom-2 -left-2 bg-green-500 text-white px-3 py-1 rounded-full text-sm font-medium shadow-lg"
-                initial={{ scale: 0 }}
-                whileInView={{ scale: 1 }}
-                transition={{ duration: 0.5, delay: 0.7 }}
-                viewport={{ once: true }}
-              >
-                500K+ Downloads
-              </motion.div>
+
             </motion.div>
           </div>
         </div>

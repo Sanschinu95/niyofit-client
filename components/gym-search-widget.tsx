@@ -7,7 +7,7 @@ import Link from "next/link"
 import { MapPin, Search, Locate, X, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from "framer-motion"
-import LimitedSpotsBadge from "@/components/limited-spots-badge"
+
 import { INDIAN_CITIES } from "@/data/indian-cities"
 
 export default function GymSearchWidget() {
@@ -113,12 +113,9 @@ export default function GymSearchWidget() {
 
   return (
     <div className="bg-white/95 backdrop-blur-md p-6 rounded-2xl shadow-xl border border-white/50 max-w-3xl mx-auto">
-      <div className="flex justify-between items-center mb-5">
-        <div>
-          <h3 className="text-xl font-bold text-blue-900">Find Your Perfect Gym</h3>
-          <p className="text-gray-600 text-sm mt-1">Search from 2000+ gyms across 20+ cities</p>
-        </div>
-        <LimitedSpotsBadge />
+      <div className="mb-5">
+        <h3 className="text-xl font-bold text-blue-900">Find Your Perfect Gym</h3>
+        <p className="text-gray-600 text-sm mt-1">Search from 2000+ gyms across 20+ cities</p>
       </div>
 
       <div className="relative w-full">
@@ -192,7 +189,7 @@ export default function GymSearchWidget() {
           </div>
 
           {/* Additional options */}
-          <div className="flex flex-col sm:flex-row gap-3 items-center">
+          <div className="flex flex-col sm:flex-row gap-3 items-center justify-center">
             {/* Use my location button */}
             <Button
               type="button"
@@ -241,19 +238,7 @@ export default function GymSearchWidget() {
         </div>
       </div>
 
-      {/* Popular cities */}
-      <div className="flex flex-wrap items-center gap-2 mt-4">
-        <span className="text-sm font-medium text-gray-700">Popular:</span>
-        {["Mumbai", "Delhi", "Bangalore", "Hyderabad", "Chennai"].map((city) => (
-          <Link
-            key={city}
-            href={`/search?location=${city}`}
-            className="px-3 py-1 bg-blue-50 hover:bg-blue-100 text-blue-900 rounded-full text-sm font-medium transition-colors"
-          >
-            {city}
-          </Link>
-        ))}
-      </div>
+
     </div>
   )
 }

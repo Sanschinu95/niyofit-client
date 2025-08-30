@@ -251,7 +251,7 @@ export default function SearchPage() {
         <div className="container mx-auto px-4">
           <h1 className="text-3xl font-bold mb-6">Find Gyms Near You</h1>
 
-          <div className="bg-white p-4 rounded-lg shadow-lg flex flex-col md:flex-row gap-2">
+          <div className="bg-white p-4 rounded-lg shadow-lg flex flex-col md:flex-row gap-2 items-center">
             <div className="flex-1">
               <CitySearch onSearch={handleSearch} placeholder="Enter your location or pincode" buttonText="Search" />
             </div>

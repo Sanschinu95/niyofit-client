@@ -9,12 +9,15 @@ interface CountdownTimerProps {
 
 export default function CountdownTimer({ targetDate, className = "" }: CountdownTimerProps) {
   const [timeLeft, setTimeLeft] = useState({
-    hours: 0,
-    minutes: 0,
-    seconds: 0,
+    hours: 23,
+    minutes: 59,
+    seconds: 59,
   })
+  const [isClient, setIsClient] = useState(false)
 
   useEffect(() => {
+    setIsClient(true)
+    
     const calculateTimeLeft = () => {
       const difference = targetDate.getTime() - new Date().getTime()
 

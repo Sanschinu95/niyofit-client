@@ -7,8 +7,8 @@ import Footer from "@/components/footer"
 import HeroParticles from "@/components/hero-particles"
 import StatsCounter from "@/components/stats-counter"
 import CountdownTimer from "@/components/countdown-timer"
-import LiveUserCounter from "@/components/live-user-counter"
-import LiveActivityFeed from "@/components/live-activity-feed"
+
+
 import AnimatedNavbar from "@/components/animated-navbar"
 import HowItWorksSection from "@/components/how-it-works-section"
 import GymSearchWidget from "@/components/gym-search-widget"
@@ -22,8 +22,7 @@ export default function Home() {
     <div className="min-h-screen flex flex-col">
       <AnimatedNavbar />
 
-      {/* Live activity feed notifications */}
-      <LiveActivityFeed />
+
 
       {/* Hero Section with FOMO elements */}
       <section className="relative text-white pt-28 pb-24 md:pt-36 md:pb-28">
@@ -42,10 +41,7 @@ export default function Home() {
         </div>
         <div className="container mx-auto px-4 relative z-20">
           <div className="max-w-3xl mx-auto text-center mb-12">
-            {/* Live user counter */}
-            <div className="flex justify-center mb-6">
-              <LiveUserCounter />
-            </div>
+
 
             <h1 className="text-4xl md:text-6xl font-bold mb-6 leading-tight">
               Transform Your <span className="text-orange-500">Fitness Journey</span> Today
@@ -56,13 +52,7 @@ export default function Home() {
               centers
             </p>
 
-            {/* Limited time offer with countdown */}
-            <div className="bg-orange-500 text-white px-4 py-2 rounded-lg inline-flex flex-wrap items-center justify-center gap-2 mb-6 animate-pulse">
-              <Zap className="h-5 w-5 flex-shrink-0" />
-              <span className="font-bold whitespace-nowrap">FLASH SALE:</span>
-              <span className="whitespace-nowrap">50% OFF on all passes for</span>
-              <CountdownTimer targetDate={targetDate} />
-            </div>
+
 
             {/* Dynamic Stats Counter */}
             <div className="flex justify-center gap-8 mb-10">
@@ -89,29 +79,7 @@ export default function Home() {
             {/* Search Widget */}
             <GymSearchWidget />
 
-            {/* Recent bookings ticker */}
-            <div className="mt-8 bg-white/10 backdrop-blur-md rounded-lg py-2 px-4 overflow-hidden">
-              <div className="flex items-center">
-                <div className="flex-shrink-0 mr-3">
-                  <Clock className="h-5 w-5 text-orange-500" />
-                </div>
-                <div className="overflow-hidden whitespace-nowrap relative w-full">
-                  <div className="animate-marquee inline-block">
-                    {[
-                      "Rahul just booked FitZone Premium in Mumbai",
-                      "Priya saved ₹1,200 on a monthly pass",
-                      "Amit found a gym 0.5km away",
-                      "Neha joined 5 minutes ago",
-                      "Vikram booked Elite Fitness in Delhi",
-                    ].map((text, index) => (
-                      <span key={index} className="inline-block mx-4">
-                        {text}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </div>
+
           </div>
         </div>
 
@@ -230,31 +198,7 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Call to Action */}
-      <section className="py-16 bg-blue-900 text-white text-center">
-        <div className="container mx-auto px-4">
-          <h2 className="text-3xl md:text-4xl font-bold mb-4">Start Your Fitness Journey Today</h2>
-          <p className="max-w-2xl mx-auto mb-8 text-blue-100">
-            Join thousands of fitness enthusiasts who have transformed their lives with our platform
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/search">
-              <Button size="lg" className="bg-orange-500 hover:bg-orange-600 text-white">
-                Find a Gym Now
-              </Button>
-            </Link>
-            <Link href="/about">
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-white text-white hover:bg-white hover:text-blue-900"
-              >
-                Learn More
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
+
 
       <Footer />
     </div>
