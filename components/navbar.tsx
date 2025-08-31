@@ -2,11 +2,26 @@
 
 import { useState } from "react"
 import Link from "next/link"
-import { Menu, X } from "lucide-react"
+import { Menu, X, LogOut, User, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
+  const { user, isAuthenticated, logout, isLoading } = useAuth()
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    try {
+      await logout()
+    } catch (error) {
+      console.error('Logout failed:', error)
+    } finally {
+      setIsLoggingOut(false)
+      setIsMenuOpen(false)
+    }
+  }
 
   return (
     <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
@@ -39,11 +54,48 @@ export default function Navbar() {
 
           {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center space-x-4">
-            <Button variant="outline" className="border-blue-900 text-blue-900 hover:bg-blue-900 hover:text-white">
-              Log In
-            </Button>
-            <Button className="bg-orange-500 hover:bg-orange-600 text-white">Sign Up</Button>
-          </div>
+            {isLoading ? (
+              <div className="flex items-center space-x-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm text-gray-600">Loading...</span>
+              </div>
+            ) : isAuthenticated && user ? (
+              <div className="flex items-center space-x-4">
+                <div className="flex items-center space-x-2">
+                  <User className="h-4 w-4 text-gray-600" />
+                  <span className="text-sm text-gray-700">Welcome, {user.name}</span>
+                </div>
+                <Button
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                  variant="outline"
+                  className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
+                >
+                  {isLoggingOut ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Logging out...
+                    </>
+                  ) : (
+                    <>
+                      <LogOut className="h-4 w-4 mr-2" />
+                      Logout
+                    </>
+                  )}
+                </Button>
+              </div>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button variant="outline" className="border-blue-900 text-blue-900 hover:bg-blue-900 hover:text-white">
+                    Log In
+                  </Button>
+                </Link>
+                <Link href="/login?tab=signup">
+                  <Button className="bg-orange-500 hover:bg-orange-600 text-white">Sign Up</Button>
+                </Link>
+              </>
+            )}          </div>
 
           {/* Mobile Menu Button */}
           <button className="md:hidden" onClick={() => setIsMenuOpen(!isMenuOpen)}>
@@ -86,13 +138,51 @@ export default function Navbar() {
             </Link>
 
             <div className="flex flex-col space-y-2 pt-2 border-t border-gray-200">
-              <Button
-                variant="outline"
-                className="border-blue-900 text-blue-900 hover:bg-blue-900 hover:text-white w-full"
-              >
-                Log In
-              </Button>
-              <Button className="bg-orange-500 hover:bg-orange-600 text-white w-full">Sign Up</Button>
+              {isLoading ? (
+                <div className="flex items-center justify-center py-4">
+                  <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                  <span className="text-sm text-gray-600">Loading...</span>
+                </div>
+              ) : isAuthenticated && user ? (
+                <>
+                  <div className="flex items-center space-x-2 py-2">
+                    <User className="h-4 w-4 text-gray-600" />
+                    <span className="text-sm text-gray-700">Welcome, {user.name}</span>
+                  </div>
+                  <Button
+                    onClick={handleLogout}
+                    disabled={isLoggingOut}
+                    variant="outline"
+                    className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white w-full"
+                  >
+                    {isLoggingOut ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                        Logging out...
+                      </>
+                    ) : (
+                      <>
+                        <LogOut className="h-4 w-4 mr-2" />
+                        Logout
+                      </>
+                    )}
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Link href="/login">
+                    <Button
+                      variant="outline"
+                      className="border-blue-900 text-blue-900 hover:bg-blue-900 hover:text-white w-full"
+                    >
+                      Log In
+                    </Button>
+                  </Link>
+                  <Link href="/login?tab=signup">
+                    <Button className="bg-orange-500 hover:bg-orange-600 text-white w-full">Sign Up</Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

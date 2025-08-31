@@ -4,15 +4,30 @@ import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
-import { Menu, X, ChevronDown, User, Search, Dumbbell, MapPin, Calendar } from "lucide-react"
+import { Menu, X, ChevronDown, User, Search, Dumbbell, MapPin, Calendar, LogOut, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from "framer-motion"
+import { useAuth } from "@/contexts/auth-context"
 
 export default function AnimatedNavbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [scrolled, setScrolled] = useState(false)
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
+  const [isLoggingOut, setIsLoggingOut] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
+  const { user, isAuthenticated, logout, isLoading } = useAuth()
+
+  const handleLogout = async () => {
+    setIsLoggingOut(true)
+    try {
+      await logout()
+    } catch (error) {
+      console.error('Logout failed:', error)
+    } finally {
+      setIsLoggingOut(false)
+      setIsMenuOpen(false)
+    }
+  }
 
   // Handle scroll effect
   useEffect(() => {
@@ -165,7 +180,7 @@ export default function AnimatedNavbar() {
                               className="flex items-center justify-between text-sm font-medium text-blue-900 hover:text-blue-700"
                             >
                               View all gym options
-                              <ArrowRight size={14} />
+                              <ArrowRight width={14} height={14} />
                             </Link>
                           </div>
                         </div>
@@ -179,20 +194,62 @@ export default function AnimatedNavbar() {
 
           {/* Desktop Auth Buttons */}
           <div className="hidden md:flex items-center space-x-3">
-            <Button
-              variant={scrolled ? "outline" : "ghost"}
-              className={
-                scrolled
-                  ? "border-blue-900 text-blue-900 hover:bg-blue-900 hover:text-white"
-                  : "border-white text-white hover:bg-white/20"
-              }
-            >
-              <User className="mr-2 h-4 w-4" />
-              Log In
-            </Button>
-            <Button className="bg-orange-500 hover:bg-orange-600 text-white shadow-md hover:shadow-lg transition-all">
-              Sign Up
-            </Button>
+            {isLoading ? (
+              <div className="flex items-center space-x-2">
+                <Loader2 className={`h-4 w-4 animate-spin ${scrolled ? 'text-gray-600' : 'text-white/90'}`} />
+                <span className={`text-sm ${scrolled ? 'text-gray-600' : 'text-white/90'}`}>Loading...</span>
+              </div>
+            ) : isAuthenticated && user ? (
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
+                  <User className={`h-4 w-4 ${scrolled ? 'text-gray-600' : 'text-white/90'}`} />
+                  <span className={`text-sm ${scrolled ? 'text-gray-700' : 'text-white/90'}`}>Welcome, {user.name}</span>
+                </div>
+                <Button
+                  onClick={handleLogout}
+                  disabled={isLoggingOut}
+                  variant={scrolled ? "outline" : "ghost"}
+                  className={
+                    scrolled
+                      ? "border-red-500 text-red-500 hover:bg-red-500 hover:text-white"
+                      : "border-red-400 text-red-400 hover:bg-red-500/20"
+                  }
+                >
+                  {isLoggingOut ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                      Logging out...
+                    </>
+                  ) : (
+                    <>
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Logout
+                    </>
+                  )}
+                </Button>
+              </div>
+            ) : (
+              <>
+                <Link href="/login">
+                  <Button
+                    variant={scrolled ? "outline" : "ghost"}
+                    className={
+                      scrolled
+                        ? "border-blue-900 text-blue-900 hover:bg-blue-900 hover:text-white"
+                        : "border-white text-white hover:bg-white/20"
+                    }
+                  >
+                    <User className="mr-2 h-4 w-4" />
+                    Log In
+                  </Button>
+                </Link>
+                <Link href="/login?tab=signup">
+                  <Button className="bg-orange-500 hover:bg-orange-600 text-white shadow-md hover:shadow-lg transition-all">
+                    Sign Up
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -278,7 +335,7 @@ export default function AnimatedNavbar() {
                           className="block py-2 text-gray-600 hover:text-blue-900 flex items-center"
                           onClick={() => setIsMenuOpen(false)}
                         >
-                          <Star size={16} className="mr-2 text-blue-900" />
+                          <Star width={16} height={16} className="mr-2 text-blue-900" />
                           Top Rated
                         </Link>
                       </div>
@@ -303,14 +360,52 @@ export default function AnimatedNavbar() {
               </Link>
 
               <div className="flex flex-col space-y-3 pt-4">
-                <Button
-                  variant="outline"
-                  className="border-blue-900 text-blue-900 hover:bg-blue-900 hover:text-white w-full flex items-center justify-center"
-                >
-                  <User className="mr-2 h-4 w-4" />
-                  Log In
-                </Button>
-                <Button className="bg-orange-500 hover:bg-orange-600 text-white w-full">Sign Up</Button>
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-4">
+                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                    <span className="text-sm text-gray-600">Loading...</span>
+                  </div>
+                ) : isAuthenticated && user ? (
+                  <>
+                    <div className="flex items-center space-x-2 py-2">
+                      <User className="h-4 w-4 text-gray-600" />
+                      <span className="text-sm text-gray-700">Welcome, {user.name}</span>
+                    </div>
+                    <Button
+                      onClick={handleLogout}
+                      disabled={isLoggingOut}
+                      variant="outline"
+                      className="border-red-500 text-red-500 hover:bg-red-500 hover:text-white w-full"
+                    >
+                      {isLoggingOut ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                          Logging out...
+                        </>
+                      ) : (
+                        <>
+                          <LogOut className="mr-2 h-4 w-4" />
+                          Logout
+                        </>
+                      )}
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/login">
+                      <Button
+                        variant="outline"
+                        className="border-blue-900 text-blue-900 hover:bg-blue-900 hover:text-white w-full flex items-center justify-center"
+                      >
+                        <User className="mr-2 h-4 w-4" />
+                        Log In
+                      </Button>
+                    </Link>
+                    <Link href="/login?tab=signup">
+                      <Button className="bg-orange-500 hover:bg-orange-600 text-white w-full">Sign Up</Button>
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           </motion.div>
