@@ -4,7 +4,8 @@ import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
-import { Menu, X, ChevronDown, User, Search, Dumbbell, MapPin, Calendar, LogOut, Loader2 } from "lucide-react"
+import { useRouter } from "next/navigation"
+import { Menu, X, ChevronDown, User, Search, Dumbbell, MapPin, LogOut, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from "framer-motion"
 import { useAuth } from "@/contexts/auth-context"
@@ -16,6 +17,7 @@ export default function AnimatedNavbar() {
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const { user, isAuthenticated, logout, isLoading } = useAuth()
+  const router = useRouter()
 
   const handleLogout = async () => {
     setIsLoggingOut(true)
@@ -88,7 +90,7 @@ export default function AnimatedNavbar() {
 
           {/* Desktop Navigation */}
           <nav className="hidden md:flex items-center space-x-1" ref={dropdownRef}>
-            {[
+            {([
               { name: "Home", href: "/", icon: null },
               {
                 name: "Find Gyms",
@@ -100,9 +102,14 @@ export default function AnimatedNavbar() {
                   { name: "Top Rated", href: "/gyms/top-rated", icon: Star },
                 ],
               },
-              { name: "Passes", href: "/passes", icon: Calendar },
-              { name: "About Us", href: "/about", icon: null },
-            ].map((item, index) => (
+              { name: "About Us", href: "/about", icon: null, isScrollTo: true },
+            ] as Array<{
+              name: string;
+              href: string;
+              icon: any;
+              dropdown?: Array<{ name: string; href: string; icon: any }>;
+              isScrollTo?: boolean;
+            }>).map((item, index) => (
               <div key={item.name} className="relative group">
                 {item.dropdown ? (
                   <button
@@ -123,6 +130,23 @@ export default function AnimatedNavbar() {
                         activeDropdown === item.name ? "rotate-180" : ""
                       }`}
                     />
+                  </button>
+                ) : item.isScrollTo ? (
+                  <button
+                    onClick={() => {
+                      window.scrollTo({
+                        top: document.documentElement.scrollHeight,
+                        behavior: 'smooth'
+                      })
+                    }}
+                    className={`px-4 py-2 rounded-md flex items-center ${
+                      scrolled
+                        ? "text-gray-700 hover:text-blue-900 hover:bg-blue-50"
+                        : "text-white/90 hover:text-white hover:bg-white/10"
+                    } font-medium transition-colors cursor-pointer`}
+                  >
+                    {item.icon && <item.icon className="mr-1.5 h-4 w-4" />}
+                    {item.name}
                   </button>
                 ) : (
                   <Link
@@ -230,24 +254,24 @@ export default function AnimatedNavbar() {
               </div>
             ) : (
               <>
-                <Link href="/login">
-                  <Button
-                    variant={scrolled ? "outline" : "ghost"}
-                    className={
-                      scrolled
-                        ? "border-blue-900 text-blue-900 hover:bg-blue-900 hover:text-white"
-                        : "border-white text-white hover:bg-white/20"
-                    }
-                  >
-                    <User className="mr-2 h-4 w-4" />
-                    Log In
-                  </Button>
-                </Link>
-                <Link href="/login?tab=signup">
-                  <Button className="bg-orange-500 hover:bg-orange-600 text-white shadow-md hover:shadow-lg transition-all">
-                    Sign Up
-                  </Button>
-                </Link>
+                <Button
+                  onClick={() => router.push('/login?tab=login')}
+                  variant={scrolled ? "outline" : "ghost"}
+                  className={
+                    scrolled
+                      ? "border-blue-900 text-blue-900 hover:bg-blue-900 hover:text-white transition-all duration-300"
+                      : "border-white text-white hover:bg-white/20 transition-all duration-300"
+                  }
+                >
+                  <User className="mr-2 h-4 w-4" />
+                  Log In
+                </Button>
+                <Button 
+                  onClick={() => router.push('/login?tab=signup')}
+                  className="bg-orange-500 hover:bg-orange-600 text-white shadow-md hover:shadow-lg transition-all duration-300"
+                >
+                  Sign Up
+                </Button>
               </>
             )}
           </div>
@@ -343,21 +367,18 @@ export default function AnimatedNavbar() {
                   )}
                 </AnimatePresence>
               </div>
-              <Link
-                href="/passes"
-                className="text-gray-700 hover:text-blue-900 font-medium py-3 border-b border-gray-100 flex items-center"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                <Calendar className="mr-2 h-5 w-5 text-blue-900" />
-                Passes
-              </Link>
-              <Link
-                href="/about"
-                className="text-gray-700 hover:text-blue-900 font-medium py-3 border-b border-gray-100"
-                onClick={() => setIsMenuOpen(false)}
+              <button
+                onClick={() => {
+                  setIsMenuOpen(false)
+                  window.scrollTo({
+                    top: document.documentElement.scrollHeight,
+                    behavior: 'smooth'
+                  })
+                }}
+                className="text-gray-700 hover:text-blue-900 font-medium py-3 border-b border-gray-100 text-left cursor-pointer"
               >
                 About Us
-              </Link>
+              </button>
 
               <div className="flex flex-col space-y-3 pt-4">
                 {isLoading ? (
@@ -392,18 +413,26 @@ export default function AnimatedNavbar() {
                   </>
                 ) : (
                   <>
-                    <Link href="/login">
-                      <Button
-                        variant="outline"
-                        className="border-blue-900 text-blue-900 hover:bg-blue-900 hover:text-white w-full flex items-center justify-center"
-                      >
-                        <User className="mr-2 h-4 w-4" />
-                        Log In
-                      </Button>
-                    </Link>
-                    <Link href="/login?tab=signup">
-                      <Button className="bg-orange-500 hover:bg-orange-600 text-white w-full">Sign Up</Button>
-                    </Link>
+                    <Button
+                      onClick={() => {
+                        setIsMenuOpen(false)
+                        router.push('/login?tab=login')
+                      }}
+                      variant="outline"
+                      className="border-blue-900 text-blue-900 hover:bg-blue-900 hover:text-white w-full flex items-center justify-center transition-all duration-300"
+                    >
+                      <User className="mr-2 h-4 w-4" />
+                      Log In
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        setIsMenuOpen(false)
+                        router.push('/login?tab=signup')
+                      }}
+                      className="bg-orange-500 hover:bg-orange-600 text-white w-full transition-all duration-300"
+                    >
+                      Sign Up
+                    </Button>
                   </>
                 )}
               </div>

@@ -209,27 +209,6 @@ export default function LoginPage() {
                 </CardHeader>
                 <form onSubmit={handleLoginSubmit}>
                   <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-2 gap-4">
-                      <Button variant="outline" className="w-full">
-                        <img src="/placeholder.svg?height=24&width=24" alt="Google" className="mr-2 h-4 w-4" />
-                        Google
-                      </Button>
-                      <Button variant="outline" className="w-full">
-                        <img src="/placeholder.svg?height=24&width=24" alt="Phone" className="mr-2 h-4 w-4" />
-                        Phone
-                      </Button>
-                    </div>
-
-                    <div className="relative">
-                      <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t"></span>
-                      </div>
-                      <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-white px-2 text-gray-500">Or continue with</span>
-                      </div>
-                    </div>
-                  </div>
 
                     <div className="space-y-4">
                       <div className="space-y-2">
@@ -300,27 +279,6 @@ export default function LoginPage() {
                 </CardHeader>
                 <form onSubmit={handleSignupSubmit}>
                   <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="grid grid-cols-2 gap-4">
-                      <Button variant="outline" className="w-full">
-                        <img src="/placeholder.svg?height=24&width=24" alt="Google" className="mr-2 h-4 w-4" />
-                        Google
-                      </Button>
-                      <Button variant="outline" className="w-full">
-                        <img src="/placeholder.svg?height=24&width=24" alt="Phone" className="mr-2 h-4 w-4" />
-                        Phone
-                      </Button>
-                    </div>
-
-                    <div className="relative">
-                      <div className="absolute inset-0 flex items-center">
-                        <span className="w-full border-t"></span>
-                      </div>
-                      <div className="relative flex justify-center text-xs uppercase">
-                        <span className="bg-white px-2 text-gray-500">Or continue with</span>
-                      </div>
-                    </div>
-                  </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">

@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Menu, X, LogOut, User, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useAuth } from "@/contexts/auth-context"
@@ -10,6 +11,7 @@ export default function Navbar() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [isLoggingOut, setIsLoggingOut] = useState(false)
   const { user, isAuthenticated, logout, isLoading } = useAuth()
+  const router = useRouter()
 
   const handleLogout = async () => {
     setIsLoggingOut(true)
@@ -44,12 +46,17 @@ export default function Navbar() {
             <Link href="/gyms" className="text-gray-700 hover:text-blue-900 font-medium">
               Find Gyms
             </Link>
-            <Link href="/passes" className="text-gray-700 hover:text-blue-900 font-medium">
-              Passes
-            </Link>
-            <Link href="/about" className="text-gray-700 hover:text-blue-900 font-medium">
+            <button
+              onClick={() => {
+                window.scrollTo({
+                  top: document.documentElement.scrollHeight,
+                  behavior: 'smooth'
+                })
+              }}
+              className="text-gray-700 hover:text-blue-900 font-medium cursor-pointer"
+            >
               About Us
-            </Link>
+            </button>
           </nav>
 
           {/* Desktop Auth Buttons */}
@@ -86,14 +93,19 @@ export default function Navbar() {
               </div>
             ) : (
               <>
-                <Link href="/login">
-                  <Button variant="outline" className="border-blue-900 text-blue-900 hover:bg-blue-900 hover:text-white">
-                    Log In
-                  </Button>
-                </Link>
-                <Link href="/login?tab=signup">
-                  <Button className="bg-orange-500 hover:bg-orange-600 text-white">Sign Up</Button>
-                </Link>
+                <Button 
+                  onClick={() => router.push('/login?tab=login')}
+                  variant="outline" 
+                  className="border-blue-900 text-blue-900 hover:bg-blue-900 hover:text-white transition-all duration-300"
+                >
+                  Log In
+                </Button>
+                <Button 
+                  onClick={() => router.push('/login?tab=signup')}
+                  className="bg-orange-500 hover:bg-orange-600 text-white transition-all duration-300"
+                >
+                  Sign Up
+                </Button>
               </>
             )}          </div>
 
@@ -122,20 +134,18 @@ export default function Navbar() {
             >
               Find Gyms
             </Link>
-            <Link
-              href="/passes"
-              className="text-gray-700 hover:text-blue-900 font-medium py-2"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Passes
-            </Link>
-            <Link
-              href="/about"
-              className="text-gray-700 hover:text-blue-900 font-medium py-2"
-              onClick={() => setIsMenuOpen(false)}
+            <button
+              onClick={() => {
+                setIsMenuOpen(false)
+                window.scrollTo({
+                  top: document.documentElement.scrollHeight,
+                  behavior: 'smooth'
+                })
+              }}
+              className="text-gray-700 hover:text-blue-900 font-medium py-2 text-left cursor-pointer"
             >
               About Us
-            </Link>
+            </button>
 
             <div className="flex flex-col space-y-2 pt-2 border-t border-gray-200">
               {isLoading ? (
@@ -170,17 +180,25 @@ export default function Navbar() {
                 </>
               ) : (
                 <>
-                  <Link href="/login">
-                    <Button
-                      variant="outline"
-                      className="border-blue-900 text-blue-900 hover:bg-blue-900 hover:text-white w-full"
-                    >
-                      Log In
-                    </Button>
-                  </Link>
-                  <Link href="/login?tab=signup">
-                    <Button className="bg-orange-500 hover:bg-orange-600 text-white w-full">Sign Up</Button>
-                  </Link>
+                  <Button
+                    onClick={() => {
+                      setIsMenuOpen(false)
+                      router.push('/login?tab=login')
+                    }}
+                    variant="outline"
+                    className="border-blue-900 text-blue-900 hover:bg-blue-900 hover:text-white w-full transition-all duration-300"
+                  >
+                    Log In
+                  </Button>
+                  <Button 
+                    onClick={() => {
+                      setIsMenuOpen(false)
+                      router.push('/login?tab=signup')
+                    }}
+                    className="bg-orange-500 hover:bg-orange-600 text-white w-full transition-all duration-300"
+                  >
+                    Sign Up
+                  </Button>
                 </>
               )}
             </div>

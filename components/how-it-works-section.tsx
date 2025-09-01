@@ -303,8 +303,10 @@ export default function HowItWorksSection() {
                 <p className="text-gray-600 text-center">{item.description}</p>
               </div>
               {index < 2 && (
-                <div className="hidden md:block absolute top-1/2 right-0 transform translate-x-1/2 -translate-y-1/2 z-10">
-                  <ArrowRight className="text-orange-500" size={30} />
+                <div className="hidden md:block absolute top-1/2 -right-4 transform translate-x-1/2 -translate-y-1/2 z-10">
+                  <div className="bg-white rounded-full p-2 shadow-md">
+                    <ArrowRight className="text-orange-500" width={24} height={24} />
+                  </div>
                 </div>
               )}
             </motion.div>
