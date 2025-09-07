@@ -7,8 +7,6 @@ import Footer from "@/components/footer"
 import HeroParticles from "@/components/hero-particles"
 import StatsCounter from "@/components/stats-counter"
 import CountdownTimer from "@/components/countdown-timer"
-
-
 import AnimatedNavbar from "@/components/animated-navbar"
 import HowItWorksSection from "@/components/how-it-works-section"
 import GymSearchWidget from "@/components/gym-search-widget"

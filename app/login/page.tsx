@@ -3,12 +3,13 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
-import { Mail, Lock, ArrowRight, User, Phone, Loader2 } from "lucide-react"
+import { Mail, Lock, ArrowRight, User, Phone, Loader2, Eye, EyeOff } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import { Checkbox } from "@/components/ui/checkbox"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
 import { useAuth } from "@/contexts/auth-context"
@@ -19,38 +20,24 @@ interface LoginFormData {
 }
 
 interface SignupFormData {
-  firstName: string
-  lastName: string
+  name: string
   email: string
   phone: string
   password: string
+  confirmPassword: string
   agreeToTerms: boolean
-}
-
-interface ApiResponse {
-  success: boolean
-  message: string
-  data?: {
-    user: {
-      id: string
-      userType: string
-      name: string
-      email: string
-      phone: string
-    }
-    token: string
-  }
-  error?: string
 }
 
 export default function LoginPage() {
   const router = useRouter()
   const searchParams = useSearchParams()
-  const { login, isAuthenticated } = useAuth()
+  const { login, register, isAuthenticated } = useAuth()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState("login")
+  const [showPassword, setShowPassword] = useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   
   const [loginForm, setLoginForm] = useState<LoginFormData>({
     email: '',
@@ -58,11 +45,11 @@ export default function LoginPage() {
   })
   
   const [signupForm, setSignupForm] = useState<SignupFormData>({
-    firstName: '',
-    lastName: '',
+    name: '',
     email: '',
     phone: '',
     password: '',
+    confirmPassword: '',
     agreeToTerms: false
   })
 
@@ -88,38 +75,18 @@ export default function LoginPage() {
     setSuccess(null)
 
     try {
-      const response = await fetch('http://localhost:4170/api/v1/auth/login-user', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: loginForm.email,
-          password: loginForm.password
-        })
-      })
-
-      const data: ApiResponse = await response.json()
-
-      if (data.success && data.data) {
-        // Use auth context to handle login
-        login(data.data.token, {
-          id: data.data.user.id,
-          email: data.data.user.email,
-          name: data.data.user.name
-        })
-        
+      const result = await login(loginForm.email, loginForm.password)
+      
+      if (result.success) {
         setSuccess('Login successful! Redirecting...')
-        
-        // Redirect to dashboard after a short delay
         setTimeout(() => {
           router.push('/dashboard')
-        }, 1500)
+        }, 1000)
       } else {
-        setError(data.message || 'Login failed')
+        setError(result.error || 'Login failed')
       }
-    } catch (err) {
-      setError('Network error. Please try again.')
+    } catch (error) {
+      setError('An unexpected error occurred')
     } finally {
       setIsLoading(false)
     }
@@ -131,177 +98,141 @@ export default function LoginPage() {
     setError(null)
     setSuccess(null)
 
+    // Validation
+    if (signupForm.password !== signupForm.confirmPassword) {
+      setError('Passwords do not match')
+      setIsLoading(false)
+      return
+    }
+
     if (!signupForm.agreeToTerms) {
-      setError('Please agree to the Terms of Service and Privacy Policy')
+      setError('Please agree to the terms and conditions')
       setIsLoading(false)
       return
     }
 
     try {
-      const response = await fetch('http://localhost:4170/api/v1/auth/register-user', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          name: `${signupForm.firstName} ${signupForm.lastName}`,
-          email: signupForm.email,
-          phone: signupForm.phone,
-          password: signupForm.password,
-          userType: 'customer'
-        })
+      const result = await register({
+        name: signupForm.name,
+        email: signupForm.email,
+        phone: signupForm.phone,
+        password: signupForm.password
       })
-
-      const data: ApiResponse = await response.json()
-
-      if (data.success && data.data) {
-        // Use auth context to handle login
-        login(data.data.token, {
-          id: data.data.user.id,
-          email: data.data.user.email,
-          name: data.data.user.name
-        })
-        
-        setSuccess('Account created successfully! Redirecting...')
-        
-        // Redirect to dashboard after a short delay
+      
+      if (result.success) {
+        setSuccess('Registration successful! Redirecting...')
         setTimeout(() => {
           router.push('/dashboard')
-        }, 1500)
+        }, 1000)
       } else {
-        setError(data.message || 'Registration failed')
+        setError(result.error || 'Registration failed')
       }
-    } catch (err) {
-      setError('Network error. Please try again.')
+    } catch (error) {
+      setError('An unexpected error occurred')
     } finally {
       setIsLoading(false)
     }
   }
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
 
-      <div className="flex-1 flex items-center justify-center py-12 px-4 bg-gray-50">
+      <div className="flex-1 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-md">
-          {error && (
-            <Alert className="mb-4 border-red-200 bg-red-50">
-              <AlertDescription className="text-red-800">{error}</AlertDescription>
-            </Alert>
-          )}
-          
-          {success && (
-            <Alert className="mb-4 border-green-200 bg-green-50">
-              <AlertDescription className="text-green-800">{success}</AlertDescription>
-            </Alert>
-          )}
-          
-          <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-            <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="login">Login</TabsTrigger>
-              <TabsTrigger value="signup">Sign Up</TabsTrigger>
-            </TabsList>
+          <Card>
+            <CardHeader className="text-center">
+              <CardTitle className="text-2xl font-bold">Welcome to NiyoFit</CardTitle>
+              <CardDescription>
+                Sign in to your account or create a new one
+              </CardDescription>
+            </CardHeader>
+            
+            <CardContent>
+              <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="login">Login</TabsTrigger>
+                  <TabsTrigger value="signup">Sign Up</TabsTrigger>
+                </TabsList>
 
-            <TabsContent value="login">
-              <Card>
-                <CardHeader className="space-y-1">
-                  <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
-                  <CardDescription>Enter your credentials to access your account</CardDescription>
-                </CardHeader>
-                <form onSubmit={handleLoginSubmit}>
-                  <CardContent className="space-y-4">
-
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <label htmlFor="login-email" className="text-sm font-medium">
-                          Email
-                        </label>
-                        <div className="relative">
-                          <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                          <Input 
-                            id="login-email" 
-                            type="email"
-                            placeholder="name@example.com" 
-                            className="pl-10" 
-                            value={loginForm.email}
-                            onChange={(e) => setLoginForm({...loginForm, email: e.target.value})}
-                            required
-                          />
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between">
-                          <label htmlFor="login-password" className="text-sm font-medium">
-                            Password
-                          </label>
-                          <Link href="/forgot-password" className="text-sm text-blue-900 hover:underline">
-                            Forgot password?
-                          </Link>
-                        </div>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                          <Input 
-                            id="login-password" 
-                            type="password" 
-                            placeholder="••••••••" 
-                            className="pl-10" 
-                            value={loginForm.password}
-                            onChange={(e) => setLoginForm({...loginForm, password: e.target.value})}
-                            required
-                          />
-                        </div>
+                {/* Login Tab */}
+                <TabsContent value="login" className="space-y-4">
+                  <form onSubmit={handleLoginSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <label htmlFor="login-email" className="text-sm font-medium">
+                        Email
+                      </label>
+                      <div className="relative">
+                        <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <Input
+                          id="login-email"
+                          type="email"
+                          placeholder="Enter your email"
+                          value={loginForm.email}
+                          onChange={(e) => setLoginForm({ ...loginForm, email: e.target.value })}
+                          className="pl-10"
+                          required
+                        />
                       </div>
                     </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Button type="submit" className="w-full bg-blue-900 hover:bg-blue-800" disabled={isLoading}>
+
+                    <div className="space-y-2">
+                      <label htmlFor="login-password" className="text-sm font-medium">
+                        Password
+                      </label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <Input
+                          id="login-password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Enter your password"
+                          value={loginForm.password}
+                          onChange={(e) => setLoginForm({ ...loginForm, password: e.target.value })}
+                          className="pl-10 pr-10"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
+                        >
+                          {showPassword ? <EyeOff /> : <Eye />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <Button type="submit" className="w-full" disabled={isLoading}>
                       {isLoading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Logging in...
+                          Signing in...
                         </>
                       ) : (
                         <>
-                          Login
+                          Sign In
                           <ArrowRight className="ml-2 h-4 w-4" />
                         </>
                       )}
                     </Button>
-                  </CardFooter>
-                </form>
-              </Card>
-            </TabsContent>
+                  </form>
+                </TabsContent>
 
-            <TabsContent value="signup">
-              <Card>
-                <CardHeader className="space-y-1">
-                  <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
-                  <CardDescription>Enter your details to create your account</CardDescription>
-                </CardHeader>
-                <form onSubmit={handleSignupSubmit}>
-                  <CardContent className="space-y-4">
-
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <label htmlFor="first-name" className="text-sm font-medium">
-                          First name
-                        </label>
-                        <Input 
-                          id="first-name" 
-                          placeholder="John" 
-                          value={signupForm.firstName}
-                          onChange={(e) => setSignupForm({...signupForm, firstName: e.target.value})}
-                          required
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <label htmlFor="last-name" className="text-sm font-medium">
-                          Last name
-                        </label>
-                        <Input 
-                          id="last-name" 
-                          placeholder="Doe" 
-                          value={signupForm.lastName}
-                          onChange={(e) => setSignupForm({...signupForm, lastName: e.target.value})}
+                {/* Signup Tab */}
+                <TabsContent value="signup" className="space-y-4">
+                  <form onSubmit={handleSignupSubmit} className="space-y-4">
+                    <div className="space-y-2">
+                      <label htmlFor="signup-name" className="text-sm font-medium">
+                        Full Name
+                      </label>
+                      <div className="relative">
+                        <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <Input
+                          id="signup-name"
+                          type="text"
+                          placeholder="Enter your full name"
+                          value={signupForm.name}
+                          onChange={(e) => setSignupForm({ ...signupForm, name: e.target.value })}
+                          className="pl-10"
                           required
                         />
                       </div>
@@ -313,31 +244,31 @@ export default function LoginPage() {
                       </label>
                       <div className="relative">
                         <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                        <Input 
-                          id="signup-email" 
+                        <Input
+                          id="signup-email"
                           type="email"
-                          placeholder="name@example.com" 
-                          className="pl-10" 
+                          placeholder="Enter your email"
                           value={signupForm.email}
-                          onChange={(e) => setSignupForm({...signupForm, email: e.target.value})}
+                          onChange={(e) => setSignupForm({ ...signupForm, email: e.target.value })}
+                          className="pl-10"
                           required
                         />
                       </div>
                     </div>
 
                     <div className="space-y-2">
-                      <label htmlFor="phone" className="text-sm font-medium">
+                      <label htmlFor="signup-phone" className="text-sm font-medium">
                         Phone Number
                       </label>
                       <div className="relative">
                         <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                        <Input 
-                          id="phone" 
+                        <Input
+                          id="signup-phone"
                           type="tel"
-                          placeholder="+91 98765 43210" 
-                          className="pl-10" 
+                          placeholder="Enter your phone number"
                           value={signupForm.phone}
-                          onChange={(e) => setSignupForm({...signupForm, phone: e.target.value})}
+                          onChange={(e) => setSignupForm({ ...signupForm, phone: e.target.value })}
+                          className="pl-10"
                           required
                         />
                       </div>
@@ -349,45 +280,73 @@ export default function LoginPage() {
                       </label>
                       <div className="relative">
                         <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                        <Input 
-                          id="signup-password" 
-                          type="password" 
-                          placeholder="••••••••" 
-                          className="pl-10" 
+                        <Input
+                          id="signup-password"
+                          type={showPassword ? "text" : "password"}
+                          placeholder="Create a password"
                           value={signupForm.password}
-                          onChange={(e) => setSignupForm({...signupForm, password: e.target.value})}
+                          onChange={(e) => setSignupForm({ ...signupForm, password: e.target.value })}
+                          className="pl-10 pr-10"
                           required
                         />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
+                        >
+                          {showPassword ? <EyeOff /> : <Eye />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label htmlFor="signup-confirm-password" className="text-sm font-medium">
+                        Confirm Password
+                      </label>
+                      <div className="relative">
+                        <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                        <Input
+                          id="signup-confirm-password"
+                          type={showConfirmPassword ? "text" : "password"}
+                          placeholder="Confirm your password"
+                          value={signupForm.confirmPassword}
+                          onChange={(e) => setSignupForm({ ...signupForm, confirmPassword: e.target.value })}
+                          className="pl-10 pr-10"
+                          required
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                          className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
+                        >
+                          {showConfirmPassword ? <EyeOff /> : <Eye />}
+                        </button>
                       </div>
                     </div>
 
                     <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
+                      <Checkbox
                         id="terms"
-                        className="h-4 w-4 rounded border-gray-300 text-blue-900 focus:ring-blue-900"
                         checked={signupForm.agreeToTerms}
-                        onChange={(e) => setSignupForm({...signupForm, agreeToTerms: e.target.checked})}
-                        required
+                        onCheckedChange={(checked) => setSignupForm({ ...signupForm, agreeToTerms: !!checked })}
                       />
                       <label htmlFor="terms" className="text-sm text-gray-600">
                         I agree to the{" "}
-                        <Link href="/terms" className="text-blue-900 hover:underline">
+                        <Link href="/terms" className="text-blue-600 hover:underline">
                           Terms of Service
                         </Link>{" "}
                         and{" "}
-                        <Link href="/privacy" className="text-blue-900 hover:underline">
+                        <Link href="/privacy" className="text-blue-600 hover:underline">
                           Privacy Policy
                         </Link>
                       </label>
                     </div>
-                  </CardContent>
-                  <CardFooter>
-                    <Button type="submit" className="w-full bg-orange-500 hover:bg-orange-600" disabled={isLoading}>
+
+                    <Button type="submit" className="w-full" disabled={isLoading}>
                       {isLoading ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Creating Account...
+                          Creating account...
                         </>
                       ) : (
                         <>
@@ -396,11 +355,37 @@ export default function LoginPage() {
                         </>
                       )}
                     </Button>
-                  </CardFooter>
-                </form>
-              </Card>
-            </TabsContent>
-          </Tabs>
+                  </form>
+                </TabsContent>
+              </Tabs>
+
+              {/* Error/Success Messages */}
+              {error && (
+                <Alert variant="destructive">
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
+
+              {success && (
+                <Alert className="border-green-200 bg-green-50 text-green-800">
+                  <AlertDescription>{success}</AlertDescription>
+                </Alert>
+              )}
+            </CardContent>
+
+            <CardFooter className="text-center">
+              <p className="text-sm text-gray-600">
+                By continuing, you agree to our{" "}
+                <Link href="/terms" className="text-blue-600 hover:underline">
+                  Terms of Service
+                </Link>{" "}
+                and{" "}
+                <Link href="/privacy" className="text-blue-600 hover:underline">
+                  Privacy Policy
+                </Link>
+              </p>
+            </CardFooter>
+          </Card>
         </div>
       </div>
 

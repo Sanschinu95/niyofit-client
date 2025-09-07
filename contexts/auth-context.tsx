@@ -2,18 +2,14 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
-
-interface User {
-  id: string;
-  email: string;
-  name: string;
-}
+import { apiService, User } from '@/lib/api';
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: (token: string, userData: User) => void;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (userData: { name: string; email: string; phone: string; password: string }) => Promise<{ success: boolean; error?: string }>;
   logout: () => Promise<void>;
   checkAuthStatus: () => void;
 }
@@ -34,6 +30,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const setAuthToken = (token: string) => {
     if (typeof window !== 'undefined') {
       localStorage.setItem(TOKEN_KEY, token);
+      apiService.setToken(token);
     }
   };
 
@@ -49,6 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem(TOKEN_KEY);
       localStorage.removeItem(USER_KEY);
       sessionStorage.clear();
+      apiService.setToken(null);
     }
   };
 
@@ -66,11 +64,44 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return null;
   };
 
-  // Login function
-  const login = (token: string, userData: User) => {
-    setAuthToken(token);
-    setUserData(userData);
-    setUser(userData);
+  // Login function with API integration
+  const login = async (email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const response = await apiService.loginUser({ email, password });
+      
+      if (response.success && response.data) {
+        const { user: userData, token } = response.data;
+        setAuthToken(token);
+        setUserData(userData);
+        setUser(userData);
+        return { success: true };
+      } else {
+        return { success: false, error: response.error || 'Login failed' };
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      return { success: false, error: 'Network error. Please try again.' };
+    }
+  };
+
+  // Register function with API integration
+  const register = async (userData: { name: string; email: string; phone: string; password: string }): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const response = await apiService.registerUser(userData);
+      
+      if (response.success && response.data) {
+        const { user: newUser, token } = response.data;
+        setAuthToken(token);
+        setUserData(newUser);
+        setUser(newUser);
+        return { success: true };
+      } else {
+        return { success: false, error: response.error || 'Registration failed' };
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      return { success: false, error: 'Network error. Please try again.' };
+    }
   };
 
   // Logout function with API call
@@ -78,18 +109,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     
     try {
-      const token = getAuthToken();
-      
-      if (token) {
-        // Call logout API endpoint
-        await fetch('http://localhost:4170/api/v1/auth/logout', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
-      }
+      await apiService.logoutUser();
     } catch (error) {
       console.error('Logout API call failed:', error);
       // Continue with local logout even if API call fails
@@ -113,18 +133,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const userData = getUserData();
       
       if (token && userData) {
-        // Verify token with backend
-        const response = await fetch('http://localhost:4170/api/v1/auth/verify-token', {
-          method: 'GET',
-          headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        });
+        // Set token in API service
+        apiService.setToken(token);
         
-        if (response.ok) {
-          const verifiedUser = await response.json();
-          setUser(verifiedUser.user || userData);
+        // Verify token with backend
+        const response = await apiService.verifyToken();
+        
+        if (response.success && response.data) {
+          setUser(response.data.user);
         } else {
           // Token is invalid, clear storage
           removeAuthToken();
@@ -155,6 +171,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     isAuthenticated,
     isLoading,
     login,
+    register,
     logout,
     checkAuthStatus,
   };

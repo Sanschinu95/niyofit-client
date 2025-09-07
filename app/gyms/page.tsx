@@ -1,184 +1,342 @@
-import { Search, MapPin, Star, ArrowUpDown } from "lucide-react"
+"use client"
+
+import { useState, useEffect } from "react"
+import Link from "next/link"
+import { Search, MapPin, Star, Filter, Loader2, Dumbbell, Clock, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Slider } from "@/components/ui/slider"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import Navbar from "@/components/navbar"
 import Footer from "@/components/footer"
+import { apiService, Gym } from "@/lib/api"
 
 export default function GymsPage() {
+  const [gyms, setGyms] = useState<Gym[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [searchTerm, setSearchTerm] = useState("")
+  const [locationSearch, setLocationSearch] = useState("")
+  const [sortBy, setSortBy] = useState("name")
+  const [priceFilter, setPriceFilter] = useState("all")
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+
+  useEffect(() => {
+    fetchGyms()
+  }, [currentPage, sortBy, priceFilter, searchTerm, locationSearch])
+
+  const fetchGyms = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      
+      const response = await apiService.getGyms({
+        page: currentPage,
+        limit: 12,
+        sort: sortBy
+      })
+
+      if (response.success && response.data) {
+        let filteredGyms = response.data.gyms
+
+        // Apply price filter
+        if (priceFilter !== "all") {
+          filteredGyms = filteredGyms.filter(gym => gym.priceRange === priceFilter)
+        }
+
+        // Apply search filter
+        if (searchTerm) {
+          filteredGyms = filteredGyms.filter(gym =>
+            gym.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            gym.description?.toLowerCase().includes(searchTerm.toLowerCase())
+          )
+        }
+
+        // Apply location filter (simplified - in production, this would be proper geospatial search)
+        if (locationSearch) {
+          // For now, we'll show all gyms when location search is used
+          // In a real implementation, you'd fetch location data and filter by coordinates
+          // This is a placeholder for the location-based filtering
+        }
+
+        setGyms(filteredGyms)
+        setTotalPages(response.data.pages)
+      } else {
+        setError("Failed to fetch gyms")
+      }
+    } catch (error) {
+      console.error("Error fetching gyms:", error)
+      setError("Failed to fetch gyms. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleSearch = () => {
+    setCurrentPage(1)
+    fetchGyms()
+  }
+
+  const formatOpeningHours = (gym: Gym) => {
+    const today = new Date().toLocaleDateString('en-US', { weekday: 'lowercase' })
+    const todayHours = gym.openingHours[today as keyof typeof gym.openingHours]
+    
+    if (todayHours?.closed) {
+      return "Closed today"
+    }
+    
+    return todayHours ? `${todayHours.open} - ${todayHours.close}` : "Hours not available"
+  }
+
+  const getPriceRangeColor = (priceRange?: string) => {
+    switch (priceRange) {
+      case 'budget': return 'bg-green-100 text-green-800'
+      case 'mid-range': return 'bg-yellow-100 text-yellow-800'
+      case 'premium': return 'bg-purple-100 text-purple-800'
+      default: return 'bg-gray-100 text-gray-800'
+    }
+  }
+
+  const getPriceRangeText = (priceRange?: string) => {
+    switch (priceRange) {
+      case 'budget': return 'Budget'
+      case 'mid-range': return 'Mid-Range'
+      case 'premium': return 'Premium'
+      default: return 'Not specified'
+    }
+  }
+
+  if (loading && gyms.length === 0) {
+    return (
+      <div className="min-h-screen flex flex-col">
+        <Navbar />
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-gray-600">Loading gyms...</p>
+          </div>
+        </div>
+        <Footer />
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen flex flex-col">
       <Navbar />
 
-      {/* Search Header */}
-      <section className="bg-blue-900 text-white py-8">
-        <div className="container mx-auto px-4">
-          <h1 className="text-3xl font-bold mb-6">Find Gyms Near You</h1>
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold mb-2">Find Your Perfect Gym</h1>
+          <p className="text-gray-600">Discover gyms near you with the best facilities and pricing</p>
+        </div>
 
-          <div className="bg-white p-4 rounded-lg shadow-lg flex flex-col md:flex-row gap-2">
-            <div className="flex-1 flex items-center bg-gray-100 rounded-md px-3">
-              <MapPin className="text-blue-900 mr-2" size={20} />
-              <Input
-                type="text"
-                placeholder="Enter your location or pincode"
-                className="border-0 bg-transparent focus-visible:ring-0 focus-visible:ring-offset-0"
-              />
+        {/* Search and Filters */}
+        <div className="mb-8 space-y-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search gyms by name or description..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                />
+              </div>
             </div>
-            <Button className="bg-orange-500 hover:bg-orange-600 text-white">
-              <Search className="mr-2" size={18} />
+            <div className="flex-1">
+              <div className="relative">
+                <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search by location (city, state)..."
+                  value={locationSearch}
+                  onChange={(e) => setLocationSearch(e.target.value)}
+                  className="pl-10"
+                  onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                />
+              </div>
+            </div>
+            <Button onClick={handleSearch} className="md:w-auto">
+              <Search className="mr-2 h-4 w-4" />
               Search
             </Button>
           </div>
-        </div>
-      </section>
 
-      <div className="container mx-auto px-4 py-8 flex-1">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Filters Sidebar */}
-          <div className="lg:w-1/4">
-            <div className="bg-white rounded-lg border border-gray-200 p-4 sticky top-20">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-lg font-bold">Filters</h2>
-                <Button variant="ghost" size="sm" className="text-blue-900 h-auto p-1">
-                  Reset
-                </Button>
-              </div>
-
-              {/* Price Range */}
-              <div className="mb-6">
-                <h3 className="text-sm font-medium mb-3">Price Range</h3>
-                <Slider defaultValue={[500]} max={2000} step={100} className="mb-2" />
-                <div className="flex justify-between text-sm text-gray-500">
-                  <span>₹0</span>
-                  <span>₹2000+</span>
-                </div>
-              </div>
-
-              {/* Distance */}
-              <div className="mb-6">
-                <h3 className="text-sm font-medium mb-3">Distance</h3>
-                <div className="space-y-2">
-                  {["0-2 km", "2-5 km", "5-10 km", "10+ km"].map((option) => (
-                    <div key={option} className="flex items-center">
-                      <Checkbox id={`distance-${option}`} />
-                      <label htmlFor={`distance-${option}`} className="ml-2 text-sm">
-                        {option}
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Facilities */}
-              <div className="mb-6">
-                <h3 className="text-sm font-medium mb-3">Facilities</h3>
-                <div className="space-y-2">
-                  {["AC", "Parking", "Personal Trainer", "Locker", "Shower", "Women's Hours", "24/7 Access"].map(
-                    (facility) => (
-                      <div key={facility} className="flex items-center">
-                        <Checkbox id={`facility-${facility}`} />
-                        <label htmlFor={`facility-${facility}`} className="ml-2 text-sm">
-                          {facility}
-                        </label>
-                      </div>
-                    ),
-                  )}
-                </div>
-              </div>
-
-              {/* Ratings */}
-              <div className="mb-6">
-                <h3 className="text-sm font-medium mb-3">Ratings</h3>
-                <div className="space-y-2">
-                  {[4, 3, 2, 1].map((rating) => (
-                    <div key={rating} className="flex items-center">
-                      <Checkbox id={`rating-${rating}`} />
-                      <label htmlFor={`rating-${rating}`} className="ml-2 text-sm flex items-center">
-                        {rating}+ <Star className="h-3 w-3 fill-orange-500 text-orange-500 ml-1" />
-                      </label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              <Button className="w-full bg-blue-900 hover:bg-blue-800">Apply Filters</Button>
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-gray-500" />
+              <span className="text-sm font-medium">Filters:</span>
             </div>
-          </div>
+            
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className="w-full md:w-48">
+                <SelectValue placeholder="Sort by" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="name">Name (A-Z)</SelectItem>
+                <SelectItem value="-name">Name (Z-A)</SelectItem>
+                <SelectItem value="rating">Rating (Low to High)</SelectItem>
+                <SelectItem value="-rating">Rating (High to Low)</SelectItem>
+              </SelectContent>
+            </Select>
 
-          {/* Gym Listings */}
-          <div className="lg:w-3/4">
-            <div className="flex justify-between items-center mb-6">
-              <h2 className="text-xl font-bold">24 Gyms Found</h2>
-              <Button variant="outline" size="sm" className="flex items-center">
-                <ArrowUpDown className="mr-2 h-4 w-4" />
-                Sort by: Recommended
+            <Select value={priceFilter} onValueChange={setPriceFilter}>
+              <SelectTrigger className="w-full md:w-48">
+                <SelectValue placeholder="Price Range" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Prices</SelectItem>
+                <SelectItem value="budget">Budget</SelectItem>
+                <SelectItem value="mid-range">Mid-Range</SelectItem>
+                <SelectItem value="premium">Premium</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Error State */}
+        {error && (
+          <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-lg">
+            <p className="text-red-800">{error}</p>
+            <Button 
+              onClick={fetchGyms} 
+              variant="outline" 
+              size="sm" 
+              className="mt-2"
+            >
+              Try Again
+            </Button>
+          </div>
+        )}
+
+        {/* Gyms Grid */}
+        {gyms.length === 0 && !loading ? (
+          <div className="text-center py-12">
+            <Dumbbell className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">No gyms found</h3>
+            <p className="text-gray-600 mb-4">
+              {searchTerm ? 
+                `No gyms found for "${searchTerm}". Try a different search term or location.` :
+                "No gyms have been added to this location yet. Check back later or try a different area."
+              }
+            </p>
+            <div className="space-y-2">
+              <p className="text-sm text-gray-500">Looking for a specific gym?</p>
+              <Button variant="outline" onClick={() => setSearchTerm("")}>
+                Clear Search
               </Button>
             </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {Array.from({ length: 6 }).map((_, index) => (
-                <Card key={index} className="overflow-hidden hover:shadow-lg transition-shadow">
-                  <div className="relative h-48">
-                    <img
-                      src={`/placeholder.svg?height=300&width=500&text=Gym ${index + 1}`}
-                      alt={`Gym ${index + 1}`}
-                      className="w-full h-full object-cover"
-                    />
-                    <div className="absolute top-3 right-3">
-                      <Badge className="bg-white text-blue-900 flex items-center gap-1">
-                        <Star className="fill-orange-500 text-orange-500" size={14} />
-                        {(4 + Math.random()).toFixed(1)}
-                      </Badge>
-                    </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+            {gyms.map((gym) => (
+              <Card key={gym._id} className="overflow-hidden hover:shadow-lg transition-shadow">
+                <div className="relative h-48 bg-gradient-to-br from-blue-500 to-purple-600">
+                  <div className="absolute inset-0 bg-black/20" />
+                  <div className="absolute top-4 right-4">
+                    <Badge className={getPriceRangeColor(gym.priceRange)}>
+                      {getPriceRangeText(gym.priceRange)}
+                    </Badge>
                   </div>
-                  <CardHeader className="pb-2">
-                    <CardTitle>{`FitZone Premium ${index + 1}`}</CardTitle>
-                    <CardDescription className="flex items-center">
-                      <MapPin size={14} className="mr-1" />
-                      {["Mumbai", "Delhi", "Bangalore", "Chennai", "Hyderabad", "Pune"][index % 6]}
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="pb-2">
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {["AC", "Parking", "Trainer", "Locker", "24/7"].slice(0, 3 + (index % 3)).map((feature, i) => (
-                        <Badge key={i} variant="outline" className="bg-blue-50">
-                          {feature}
-                        </Badge>
-                      ))}
-                    </div>
-                    <p className="font-bold text-blue-900">
-                      Starting from <span className="text-lg">₹{399 + index * 50}</span>/day
-                    </p>
-                  </CardContent>
-                  <CardFooter>
-                    <Button className="w-full bg-orange-500 hover:bg-orange-600">View Gym</Button>
-                  </CardFooter>
-                </Card>
-              ))}
-            </div>
+                  <div className="absolute bottom-4 left-4 text-white">
+                    <h3 className="text-lg font-bold">{gym.name}</h3>
+                    {gym.rating && (
+                      <div className="flex items-center gap-1">
+                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
+                        <span className="text-sm">{gym.rating.toFixed(1)}</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-            <div className="mt-8 flex justify-center">
-              <Button variant="outline" className="mx-1">
-                1
-              </Button>
-              <Button variant="outline" className="mx-1">
-                2
-              </Button>
-              <Button variant="outline" className="mx-1">
-                3
-              </Button>
-              <Button variant="ghost" className="mx-1">
-                ...
-              </Button>
-              <Button variant="outline" className="mx-1">
-                8
-              </Button>
+                <CardContent className="p-4">
+                  <div className="space-y-3">
+                    {gym.description && (
+                      <p className="text-sm text-gray-600 line-clamp-2">
+                        {gym.description}
+                      </p>
+                    )}
+
+                    <div className="flex items-center text-sm text-gray-500">
+                      <Clock className="h-4 w-4 mr-1" />
+                      <span>{formatOpeningHours(gym)}</span>
+                    </div>
+
+                    {gym.contact?.phone && (
+                      <div className="flex items-center text-sm text-gray-500">
+                        <MapPin className="h-4 w-4 mr-1" />
+                        <span>{gym.contact.phone}</span>
+                      </div>
+                    )}
+
+                    {gym.facilities && gym.facilities.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {gym.facilities.slice(0, 3).map((facility, index) => (
+                          <Badge key={index} variant="outline" className="text-xs">
+                            {facility}
+                          </Badge>
+                        ))}
+                        {gym.facilities.length > 3 && (
+                          <Badge variant="outline" className="text-xs">
+                            +{gym.facilities.length - 3} more
+                          </Badge>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+
+                <CardFooter className="p-4 pt-0">
+                  <Link href={`/gyms/${gym._id}`} className="w-full">
+                    <Button className="w-full">
+                      View Details
+                    </Button>
+                  </Link>
+                </CardFooter>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        {/* Pagination */}
+        {totalPages > 1 && (
+          <div className="flex justify-center items-center gap-2">
+            <Button
+              variant="outline"
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1 || loading}
+            >
+              Previous
+            </Button>
+            
+            <span className="px-4 py-2 text-sm text-gray-600">
+              Page {currentPage} of {totalPages}
+            </span>
+            
+            <Button
+              variant="outline"
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages || loading}
+            >
+              Next
+            </Button>
+          </div>
+        )}
+
+        {/* Loading Overlay */}
+        {loading && gyms.length > 0 && (
+          <div className="fixed inset-0 bg-black/20 flex items-center justify-center z-50">
+            <div className="bg-white p-6 rounded-lg shadow-lg">
+              <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+              <p className="text-sm text-gray-600">Loading...</p>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       <Footer />

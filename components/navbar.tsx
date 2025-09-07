@@ -46,6 +46,9 @@ export default function Navbar() {
             <Link href="/gyms" className="text-gray-700 hover:text-blue-900 font-medium">
               Find Gyms
             </Link>
+            <Link href="/admin" className="text-gray-700 hover:text-blue-900 font-medium">
+              Admin
+            </Link>
             <button
               onClick={() => {
                 window.scrollTo({
@@ -133,6 +136,13 @@ export default function Navbar() {
               onClick={() => setIsMenuOpen(false)}
             >
               Find Gyms
+            </Link>
+            <Link
+              href="/admin"
+              className="text-gray-700 hover:text-blue-900 font-medium py-2"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Admin
             </Link>
             <button
               onClick={() => {
