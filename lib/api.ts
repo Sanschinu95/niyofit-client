@@ -7,6 +7,40 @@ export interface ApiResponse<T> {
   error?: string;
 }
 
+// Add gym search functions
+export const searchGyms = async (params: { 
+  near?: string,
+  radius?: number,
+  page?: number,
+  limit?: number
+}) => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/gyms?${new URLSearchParams(params as any)}`);
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error fetching gyms:', error);
+    throw error;
+  }
+};
+
+export const searchGymsByLocation = async (latitude: number, longitude: number, radius: number = 10) => {
+  try {
+    const params = new URLSearchParams({
+      near: `${latitude},${longitude}`,
+      radius: radius.toString(),
+      page: '1',
+      limit: '20'
+    });
+    const response = await fetch(`${API_BASE_URL}/locations?${params}`);
+    const data = await response.json();
+    return data;
+  } catch (error) {
+    console.error('Error searching gyms by location:', error);
+    throw error;
+  }
+};
+
 export interface User {
   _id: string;
   name: string;

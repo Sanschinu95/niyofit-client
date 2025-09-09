@@ -124,38 +124,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // Check authentication status on app load
+  // Check authentication status on app load (no backend verify endpoint available)
   const checkAuthStatus = async () => {
     setIsLoading(true);
-    
+
     try {
       const token = getAuthToken();
       const userData = getUserData();
-      
+
       if (token && userData) {
-        // Set token in API service
+        // Trust stored session; set token for subsequent authenticated calls
         apiService.setToken(token);
-        
-        // Verify token with backend
-        const response = await apiService.verifyToken();
-        
-        if (response.success && response.data) {
-          setUser(response.data.user);
-        } else {
-          // Token is invalid, clear storage
-          removeAuthToken();
-          setUser(null);
-        }
+        setUser(userData);
       } else {
         setUser(null);
       }
     } catch (error) {
       console.error('Auth status check failed:', error);
-      // If verification fails, use stored user data as fallback
-      const userData = getUserData();
-      if (userData) {
-        setUser(userData);
-      }
+      setUser(null);
     } finally {
       setIsLoading(false);
     }

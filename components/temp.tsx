@@ -1,94 +1,47 @@
 "use client"
 
 import type React from "react"
-import { useState, useEffect, useCallback } from "react"
-
-const getDayOfWeek = () => {
-  const days = ['sunday', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday']
-  return days[new Date().getDay()]
-}
+import { useState, useEffect } from "react"
 import Link from "next/link"
-import { MapPin, Locate, Search, X, ArrowRight, AlertCircle } from "lucide-react"
+import { MapPin, Locate, Search, X, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { motion, AnimatePresence } from "framer-motion"
 import { searchGyms, searchGymsByLocation } from "@/lib/api"
 import { INDIAN_CITIES } from "@/data/indian-cities"
-import debounce from 'lodash/debounce'
-import { useToast } from "@/hooks/use-toast"
 
 interface Gym {
   _id: string
   name: string
-  description: string
-  locationId: string
-  facilities: string[]
-  priceRange: string
-  isActive: boolean
-  openingHours: {
-    [key: string]: {
-      open: string
-      close: string
-      closed: boolean
-    }
+  description?: string
+  location: {
+    address: string
+    city: string
   }
-  contact: {
-    phone: string
-    email: string
-    website: string
-  }
-  subscriptionListings: any[]
-  pictures: any[]
 }
 
 export default function GymSearchWidget() {
-  const { toast } = useToast()
   const [query, setQuery] = useState("")
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const [selectedIndex, setSelectedIndex] = useState(-1)
   const [isLocating, setIsLocating] = useState(false)
   const [location, setLocation] = useState<string | null>(null)
-  const [hasLocationPermission, setHasLocationPermission] = useState<boolean | null>(null)
   const [gyms, setGyms] = useState<Gym[]>([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [recentSearches, setRecentSearches] = useState<string[]>([])
 
-  // Load recent searches and check location permission on mount
+  // Load recent searches on mount
   useEffect(() => {
-    loadRecentSearches()
-    checkLocationPermission()
-    fetchAllGyms() // Load all gyms by default
-  }, [])
-
-  // Load recent searches
-  const loadRecentSearches = () => {
     try {
       const savedSearches = localStorage.getItem("recentSearches")
       if (savedSearches) {
         setRecentSearches(JSON.parse(savedSearches).slice(0, 3))
       }
     } catch (e) {
-      console.error("Error loading recent searches:", e)
+      // Handle localStorage errors silently
     }
-  }
-
-  // Check location permission status
-  const checkLocationPermission = async () => {
-    if ("permissions" in navigator) {
-      try {
-        const permission = await navigator.permissions.query({ name: "geolocation" })
-        setHasLocationPermission(permission.state === "granted")
-        
-        permission.addEventListener("change", () => {
-          setHasLocationPermission(permission.state === "granted")
-        })
-      } catch (e) {
-        console.error("Error checking location permission:", e)
-        setHasLocationPermission(false)
-      }
-    }
-  }
+  }, [])
 
   const saveRecentSearch = (city: string) => {
     const updatedSearches = [city, ...recentSearches.filter(item => item !== city)].slice(0, 3)
@@ -100,60 +53,25 @@ export default function GymSearchWidget() {
     }
   }
 
-  // Debounced search function
-  const debouncedSearch = useCallback(
-    debounce(async (searchQuery: string) => {
-      if (!searchQuery.trim()) {
-        await fetchAllGyms()
-        return
-      }
-      
-      setLoading(true)
-      setError(null)
-      
-      try {
-        const response = await searchGyms({ 
-          near: searchQuery,
-          radius: 10
-        })
-        
-        let gymsData: Gym[] = []
-        if (Array.isArray(response)) {
-          gymsData = response
-        } else if (response && Array.isArray(response.data)) {
-          gymsData = response.data
-        }
-        
-        if (gymsData.length > 0) {
-          setGyms(gymsData)
-          setLocation(searchQuery)
-        } else {
-          // If no gyms found in the area, fetch all gyms
-          await fetchAllGyms()
-          toast({
-            title: "No gyms found in this area",
-            description: "Showing all available gyms instead",
-            duration: 3000,
-          })
-        }
-      } catch (err) {
-        console.error('Error searching gyms:', err)
-        setError("Failed to fetch gyms for this location")
-        await fetchAllGyms()
-        toast({
-          title: "Error",
-          description: "Failed to search gyms. Showing all available gyms instead.",
-          variant: "destructive",
-        })
-      } finally {
-        setLoading(false)
-      }
-    }, 300),
-    [toast]
-  )
-
   const handleSearch = async (searchQuery: string) => {
-    await debouncedSearch(searchQuery)
+    if (!searchQuery.trim()) return
+    
+    setLoading(true)
+    try {
+      const response = await searchGyms({ 
+        near: searchQuery,
+        radius: 10,
+        page: 1,
+        limit: 20 
+      })
+      setGyms(response.data || [])
+      setLocation(searchQuery)
+      setError(null)
+    } catch (err) {
+      setError("Failed to fetch gyms for this location")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const handleSelectCity = (city: string) => {
@@ -163,60 +81,30 @@ export default function GymSearchWidget() {
     handleSearch(city)
   }
 
-  const getUserLocation = async () => {
+  const getUserLocation = () => {
     setIsLocating(true)
-    setError(null)
-
-    try {
-      if (!("geolocation" in navigator)) {
-        throw new Error("Geolocation is not supported by your browser")
-      }
-
-      const position = await new Promise<GeolocationPosition>((resolve, reject) => {
-        navigator.geolocation.getCurrentPosition(resolve, reject, {
-          enableHighAccuracy: true,
-          timeout: 5000,
-          maximumAge: 0
-        })
-      })
-
-      const { latitude, longitude } = position.coords
-      
-      try {
-        const response = await searchGymsByLocation(latitude, longitude)
-        
-        let gymsData: Gym[] = []
-        if (Array.isArray(response)) {
-          gymsData = response
-        } else if (response && Array.isArray(response.data)) {
-          gymsData = response.data
+    if ("geolocation" in navigator) {
+      navigator.geolocation.getCurrentPosition(
+        async (position) => {
+          try {
+            const { latitude, longitude } = position.coords
+            const response = await searchGymsByLocation(latitude, longitude)
+            setGyms(response.data || [])
+            setLocation(`Near You (${latitude.toFixed(2)}, ${longitude.toFixed(2)})`)
+            setError(null)
+          } catch (err) {
+            setError("Failed to fetch nearby gyms")
+          } finally {
+            setIsLocating(false)
+          }
+        },
+        (error) => {
+          setError("Failed to get location. Please enable location services.")
+          setIsLocating(false)
         }
-        
-        if (gymsData.length > 0) {
-          setGyms(gymsData)
-          setLocation(`Near You (${latitude.toFixed(2)}, ${longitude.toFixed(2)})`)
-        } else {
-          await fetchAllGyms()
-          toast({
-            title: "No gyms found nearby",
-            description: "Showing all available gyms instead",
-            duration: 3000,
-          })
-        }
-      } catch (err) {
-        console.error("Error fetching nearby gyms:", err)
-        await fetchAllGyms()
-        toast({
-          title: "Error fetching nearby gyms",
-          description: "Showing all available gyms instead",
-          variant: "destructive",
-        })
-      }
-    } catch (err) {
-      console.error("Geolocation error:", err)
-      setError("Failed to get location. Please enable location services.")
-      await fetchAllGyms()
-    } finally {
+      )
+    } else {
+      setError("Geolocation is not supported by your browser")
       setIsLocating(false)
     }
   }
@@ -224,25 +112,12 @@ export default function GymSearchWidget() {
   const fetchAllGyms = async () => {
     setLoading(true)
     try {
-      const response = await searchGyms({}) // Pass empty object to satisfy TypeScript
-      if (Array.isArray(response)) {
-        setGyms(response)
-      } else if (response && Array.isArray(response.data)) {
-        setGyms(response.data)
-      } else {
-        setGyms([])
-      }
+      const response = await searchGyms({ page: 1, limit: 20 })
+      setGyms(response.data || [])
       setLocation("All Locations")
       setError(null)
     } catch (err) {
-      console.error('Error fetching gyms:', err)
       setError("Failed to fetch gyms")
-      toast({
-        title: "Error",
-        description: "Failed to fetch gyms. Please try again.",
-        variant: "destructive",
-      })
-      setGyms([])
     } finally {
       setLoading(false)
     }
@@ -283,7 +158,6 @@ export default function GymSearchWidget() {
   const handleClearInput = () => {
     setQuery("")
     setShowSuggestions(false)
-    fetchAllGyms()
   }
 
   return (
@@ -446,23 +320,10 @@ export default function GymSearchWidget() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {gyms.map((gym) => (
                 <Link href={`/gyms/${gym._id}`} key={gym._id}>
-                  <div className="p-4 border rounded-lg hover:shadow-md transition-shadow bg-white">
-                    <h3 className="font-semibold text-lg text-blue-900">{gym.name}</h3>
-                    <p className="text-gray-600">{gym.description}</p>
-                    <div className="mt-2 flex items-center gap-2">
-                      <span className="px-2 py-1 bg-blue-100 text-blue-800 text-xs font-medium rounded">
-                        {gym.priceRange}
-                      </span>
-                      {gym.isActive && (
-                        <span className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">
-                          Active
-                        </span>
-                      )}
-                    </div>
-                    <div className="mt-2 text-sm text-gray-500">
-                      <p>Open today: {gym.openingHours[getDayOfWeek()]?.open} - {gym.openingHours[getDayOfWeek()]?.close}</p>
-                      <p className="mt-1">{gym.contact.phone}</p>
-                    </div>
+                  <div className="p-4 border rounded-lg hover:shadow-md transition-shadow">
+                    <h3 className="font-semibold text-lg">{gym.name}</h3>
+                    <p className="text-gray-600">{gym.location.address}</p>
+                    <p className="text-gray-500">{gym.location.city}</p>
                   </div>
                 </Link>
               ))}
